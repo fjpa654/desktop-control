@@ -157,20 +157,35 @@ static class Dc
         }
     }
 
+    // Lower is better: exact title, then title prefix, then process name, then title substring.
+    // Ranking keeps e.g. a terminal tab titled "Insta360 notes" from beating "Insta360 Studio".
+    static int Rank(Process p, string title)
+    {
+        var t = p.MainWindowTitle;
+        const StringComparison ic = StringComparison.OrdinalIgnoreCase;
+        if (t.Equals(title, ic)) return 0;
+        if (t.StartsWith(title, ic)) return 1;
+        if (p.ProcessName.IndexOf(title, ic) >= 0) return 2;
+        if (t.IndexOf(title, ic) >= 0) return 3;
+        return int.MaxValue;
+    }
+
     static void Focus(string title)
     {
+        Process best = null;
+        int bestRank = int.MaxValue;
         foreach (var p in Process.GetProcesses())
         {
             if (p.MainWindowHandle == IntPtr.Zero) continue;
-            if (p.MainWindowTitle.IndexOf(title, StringComparison.OrdinalIgnoreCase) < 0) continue;
-            if (IsIconic(p.MainWindowHandle)) ShowWindow(p.MainWindowHandle, 9);  // SW_RESTORE
-            // Windows only lets the foreground process steal focus; a no-op Alt tap satisfies that.
-            KeyEvent(0x12, false); KeyEvent(0x12, true);
-            SetForegroundWindow(p.MainWindowHandle);
-            Console.WriteLine(p.MainWindowTitle);
-            return;
+            int r = Rank(p, title);
+            if (r < bestRank) { best = p; bestRank = r; }
         }
-        Die("no window title contains: " + title);
+        if (best == null) Die("no window matches: " + title);
+        if (IsIconic(best.MainWindowHandle)) ShowWindow(best.MainWindowHandle, 9);  // SW_RESTORE
+        // Windows only lets the foreground process steal focus; a no-op Alt tap satisfies that.
+        KeyEvent(0x12, false); KeyEvent(0x12, true);
+        SetForegroundWindow(best.MainWindowHandle);
+        Console.WriteLine(best.MainWindowTitle);
     }
 
     static void Main(string[] a)
