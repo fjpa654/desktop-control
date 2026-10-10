@@ -1,0 +1,8 @@
+#!/bin/zsh
+# shot [out.png] — screenshot the main display, downscaled to point size so
+# pixel coordinates in the image equal dc click coordinates.
+out=${1:-/tmp/dc-shot.png}
+screencapture -x -C "$out" || exit 1
+w=$(osascript -e 'tell application "Finder" to get item 3 of (get bounds of window of desktop)')
+sips --resampleWidth "$w" "$out" >/dev/null
+echo "$out"
