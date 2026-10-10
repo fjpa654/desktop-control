@@ -56,3 +56,31 @@ Modifiers: `cmd`, `shift`, `alt`/`opt`, `ctrl`, `fn`.
 - It drives your real mouse and keyboard — don't use the computer while it runs.
 - Main display only.
 - Tested on macOS 12 (Intel).
+
+## Windows
+
+The `windows/` folder is a port with the same commands, using `SendInput` and
+GDI screen capture. No dependencies: it builds with the C# compiler that ships
+with Windows.
+
+```powershell
+cd desktop-control\windows
+powershell -ExecutionPolicy Bypass -File build.ps1   # produces dc.exe and shot.exe
+```
+
+```powershell
+.\shot.exe                 # writes %TEMP%\dc-shot.png (or .\shot.exe path.png)
+.\dc.exe focus "Insta360"  # bring the first window whose title contains the text to front
+.\dc.exe click 640 400
+.\dc.exe key s ctrl        # Ctrl+S (cmd is accepted as an alias for ctrl)
+```
+
+All other commands match the macOS version. Modifiers: `ctrl`, `shift`, `alt`, `win`.
+
+Claude downscales screenshots whose long edge is over 1568 px, which would throw
+clicks off. So `shot` shrinks the primary display to fit and writes the factor to
+`%TEMP%\dc-scale.txt`; `dc` reads it, so a pixel at (x, y) in the image is where
+`dc click x y` lands. Run `shot` again after changing resolution.
+
+Primary display only. No permissions are needed, but `dc` can't drive windows of
+apps running as Administrator unless it runs elevated too.
